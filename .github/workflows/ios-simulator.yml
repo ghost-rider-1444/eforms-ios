@@ -1,0 +1,69 @@
+name: iOS simulator verification
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-simulator.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-simulator.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Select an available iPhone simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEVICE="$(xcrun simctl list devices available | sed -nE 's/^[[:space:]]+(iPhone[^()]*) \([0-9A-F-]+\) \(Shutdown\)$/\1/p' | head -n 1 | sed 's/[[:space:]]*$//')"
+          test -n "$DEVICE"
+          echo "name=$DEVICE" >> "$GITHUB_OUTPUT"
+
+      - name: Build and run parity tests
+        working-directory: ios
+        run: >-
+          xcodebuild test
+          -project eForms.xcodeproj
+          -scheme eForms
+          -destination 'platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}'
+          -derivedDataPath "$RUNNER_TEMP/eforms-derived"
+          -resultBundlePath "$RUNNER_TEMP/eFormsTests.xcresult"
+          CODE_SIGNING_ALLOWED=NO
+          COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Package unsigned simulator build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/eforms-derived/Build/Products/Debug-iphonesimulator"
+          ditto -c -k --sequesterRsrc --keepParent eForms.app "$GITHUB_WORKSPACE/eForms-ios-simulator.zip"
+
+      - name: Upload simulator build and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eForms-ios-simulator
+          path: |
+            eForms-ios-simulator.zip
+            ${{ runner.temp }}/eFormsTests.xcresult
+          if-no-files-found: warn
+          retention-days: 14
