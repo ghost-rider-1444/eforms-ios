@@ -21,6 +21,7 @@ jobs:
           test -f ios-source.zip
           unzip -o ios-source.zip || { code=$?; test "$code" -eq 1; }
           rm ios-source.zip
+          rm -f .github/workflows/ios-simulator.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
