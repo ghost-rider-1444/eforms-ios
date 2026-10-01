@@ -1,0 +1,117 @@
+name: eForms
+options:
+  bundleIdPrefix: app.offlineform
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.0.0"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+  configs:
+    Debug:
+      ENABLE_TESTABILITY: YES
+    Release:
+      ENABLE_TESTABILITY: NO
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      SWIFT_COMPILATION_MODE: wholemodule
+      COPY_PHASE_STRIP: YES
+      STRIP_INSTALLED_PRODUCT: YES
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    from: 11.0.0
+targets:
+  eForms:
+    type: application
+    platform: iOS
+    sources:
+      - path: eForms
+    info:
+      path: eForms/Info.plist
+    entitlements:
+      path: eForms/eForms.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios
+        PRODUCT_NAME: eForms
+        INFOPLIST_KEY_CFBundleDisplayName: eForms
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - target: AttendanceWidget
+        embed: true
+      - package: Firebase
+        product: FirebaseCrashlytics
+    postBuildScripts:
+      - name: Upload Crashlytics symbols when configured
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)
+          - $(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(TARGET_NAME)
+          - $(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Info.plist
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
+        script: |
+          if [ -f "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist" ]; then
+            "${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
+          fi
+
+  AttendanceWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: AttendanceWidget
+      - path: eForms/Data/WidgetSnapshot.swift
+    info:
+      path: AttendanceWidget/Info.plist
+    entitlements:
+      path: AttendanceWidget/AttendanceWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios.AttendanceWidget
+        PRODUCT_NAME: AttendanceWidget
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_STYLE: Automatic
+
+  eFormsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: eFormsTests
+    dependencies:
+      - target: eForms
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  eFormsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: eFormsUITests
+    dependencies:
+      - target: eForms
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  eForms:
+    build:
+      targets:
+        eForms: all
+        AttendanceWidget: all
+        eFormsTests: [test]
+    test:
+      targets:
+        - eFormsTests
+        - eFormsUITests
+      gatherCoverageData: true
