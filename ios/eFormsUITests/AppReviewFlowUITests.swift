@@ -13,7 +13,7 @@ final class AppReviewFlowUITests: XCTestCase {
     func testFoldersAttendanceAndNativeFormAreReachable() {
         XCTAssertTrue(app.staticTexts["eForms"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Attendance overdue"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.searchFields["Search forms"].exists)
+        XCTAssertTrue(app.textFields["Search forms"].exists)
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Forms'")).firstMatch.exists)
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Drafts'")).firstMatch.exists)
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Outbox'")).firstMatch.exists)
@@ -36,7 +36,7 @@ final class AppReviewFlowUITests: XCTestCase {
     }
 
     func testSearchAndPrivacyFooter() {
-        let search = app.searchFields["Search forms"]
+        let search = app.textFields["Search forms"]
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap()
         search.typeText("placement")
