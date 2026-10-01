@@ -32,3 +32,84 @@ targets:
     sources:
       - path: eForms
     entitlements:
+      path: eForms/eForms.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios
+        PRODUCT_NAME: eForms
+        INFOPLIST_FILE: eForms/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: eForms
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - target: AttendanceWidget
+        embed: true
+      - package: Firebase
+        product: FirebaseCrashlytics
+    postBuildScripts:
+      - name: Upload Crashlytics symbols when configured
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)
+          - $(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(TARGET_NAME)
+          - $(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Info.plist
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
+        script: |
+          if [ -f "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist" ]; then
+            "${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
+          fi
+
+  AttendanceWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: AttendanceWidget
+      - path: eForms/Data/WidgetSnapshot.swift
+    entitlements:
+      path: AttendanceWidget/AttendanceWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios.AttendanceWidget
+        PRODUCT_NAME: AttendanceWidget
+        INFOPLIST_FILE: AttendanceWidget/Info.plist
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_STYLE: Automatic
+
+  eFormsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: eFormsTests
+    dependencies:
+      - target: eForms
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  eFormsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: eFormsUITests
+    dependencies:
+      - target: eForms
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.offlineform.companion.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  eForms:
+    build:
+      targets:
+        eForms: all
+        AttendanceWidget: all
+        eFormsTests: [test]
+    test:
+      targets:
+        - eFormsTests
+        - eFormsUITests
+      gatherCoverageData: true
