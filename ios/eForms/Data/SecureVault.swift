@@ -57,6 +57,9 @@ final class SecureVault {
 
     func clear() throws {
         try? fileManager.removeItem(at: vaultURL)
+        #if DEBUG
+        if usesEphemeralTestKey { return }
+        #endif
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -73,6 +76,14 @@ final class SecureVault {
     #endif
 
     private func loadOrCreateKey() throws -> SymmetricKey {
+        #if DEBUG
+        if usesEphemeralTestKey {
+            // Unsigned simulator test hosts cannot use Keychain entitlements. Keep this
+            // deterministic key strictly inside DEBUG test processes so persistence,
+            // encryption-at-rest and relaunch behaviour can still be exercised in CI.
+            return SymmetricKey(data: Data(repeating: 0xA5, count: 32))
+        }
+        #endif
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -100,4 +111,11 @@ final class SecureVault {
         guard addStatus == errSecSuccess else { throw VaultError.keychain(addStatus) }
         return SymmetricKey(data: data)
     }
+
+    #if DEBUG
+    private var usesEphemeralTestKey: Bool {
+        ProcessInfo.processInfo.arguments.contains("--ui-testing") ||
+            ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+    #endif
 }
