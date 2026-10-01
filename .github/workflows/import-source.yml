@@ -1,0 +1,28 @@
+name: Import sanitised iOS source
+
+on:
+  push:
+    paths:
+      - "ios-source.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ios-source.zip
+          unzip -o ios-source.zip
+          rm ios-source.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Import sanitised native iOS project"
+          git push
