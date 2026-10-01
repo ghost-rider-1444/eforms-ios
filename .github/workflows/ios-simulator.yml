@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DEVICE="$(xcrun simctl list devices available | sed -nE 's/^[[:space:]]+(iPhone[^()]*) \([0-9A-F-]+\) \(Shutdown\)$/\1/p' | head -n 1 | sed 's/[[:space:]]*$//')"
+          DEVICE="$(xcrun simctl list devices available | awk -F ' \(' '/^[[:space:]]+iPhone/{sub(/^[[:space:]]*/, "", $1); print $1; exit}')"
           test -n "$DEVICE"
           echo "name=$DEVICE" >> "$GITHUB_OUTPUT"
 
